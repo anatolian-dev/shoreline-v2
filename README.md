@@ -1,6 +1,6 @@
 # Shoreline V2
 
-A Minecraft 1.21.4 Fabric client mod built on the legacy Shoreline v2 codebase.
+Experimental Minecraft 1.21.11 Fabric client mod built on the Shoreline v2 codebase.
 
 ## Features
 
@@ -33,11 +33,11 @@ Private - All rights reserved.
 
 ## Features & Modules
 
-- [x] **Combat**: KillAura, AutoCrystal, AutoPot, AnchorAura, Criticals, BowAim, ClickCrystal, SelfBow
-- [x] **Movement**: Flight, Speed, Scaffold, Phase (GrimCC supported), Elytra, Jesus, Velocity (Grim & PhaseOnly), FastSwim, IceSpeed, AntiLevitation, TickShift
-- [x] **Render**: ESP, Chams, Tracers, Nametags, NoRender, Shaders, Skybox, KillEffect, NewChunks, NoMineAnimation
-- [x] **HUD**: ArrayList, Coords, Speed, Ping, FPS, TPS, Potions, Notifications
-- [x] **World**: Nuker, Timer, FastPlace, XRay, AutoTool, SpeedMine, AutoMine (Head, Ceiling, & Feet)
-- [x] **Exploit**: NoFall, AntiHunger, Backtrack, Phase, Reach, PortalGodMode, ClientSpoof, Disabler, PacketCanceller
-- [x] **Misc**: FakePlayer, AutoReconnect, AutoRespawn, ChestStealer, Spammer, AntiAFK, AutoGG, PingStabler, NoLag (Sound lag protection)
+-  **Combat**: KillAura, AutoCrystal, AutoPot, AnchorAura, Criticals, BowAim, ClickCrystal, SelfBow
+-  **Movement**: Flight, Speed, Scaffold, Phase (GrimCC supported), Elytra, Jesus, Velocity (Grim & PhaseOnly), FastSwim, IceSpeed, AntiLevitation, TickShift
+-  **Render**: ESP, Chams, Tracers, Nametags, NoRender, Shaders, Skybox, KillEffect, NewChunks, NoMineAnimation
+-  **HUD**: ArrayList, Coords, Speed, Ping, FPS, TPS, Potions, Notifications
+-  **World**: Nuker, Timer, FastPlace, XRay, AutoTool, SpeedMine, AutoMine (Head, Ceiling, & Feet)
+-  **Exploit**: NoFall, AntiHunger, Backtrack, Phase, Reach, PortalGodMode, ClientSpoof, Disabler, PacketCanceller
+-  **Misc**: FakePlayer, AutoReconnect, AutoRespawn, ChestStealer, Spammer, AntiAFK, AutoGG, PingStabler, NoLag (Sound lag protection)
 
