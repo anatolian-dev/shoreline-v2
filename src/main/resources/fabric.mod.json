@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "shoreline",
+  "version": "${version}",
+  "name": "Shoreline",
+  "description": "2b2t/Anarchy Utility Mod",
+  "authors": [
+    "linus",
+    "antisocialdev",
+    "cxiy",
+    "felekdev",
+    "weweq123"
+    
+  ],
+  "contact": {
+    "homepage": "shoreline.opiumclient.net"
+  },
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "net.shoreline.client.ShorelineMod"
+    ]
+  },
+  "mixins": [
+    "mixins.shoreline.json"
+  ],
+  "accessWidener": "shoreline.accesswidener",
+  "depends": {
+    "java": ">=21",
+    "fabricloader": ">=0.18.2",
+    "minecraft": "1.21.11",
+    "fabric-api": "*"
+  }
+}

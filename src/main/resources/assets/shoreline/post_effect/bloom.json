@@ -1,0 +1,119 @@
+{
+  "targets": {
+    "swap": {}
+  },
+  "passes": [
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "shoreline:post/bloom",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "minecraft:main",
+          "bilinear": true
+        }
+      ],
+      "output": "swap",
+      "uniforms": {
+        "ShorelineBloomConfig": [
+          {
+            "name": "u_GradientColor",
+            "type": "vec4",
+            "value": [1.0, 1.0, 1.0, 1.0]
+          },
+          {
+            "name": "u_Resolution",
+            "type": "vec2",
+            "value": [1920.0, 1080.0]
+          },
+          {
+            "name": "u_ShaderTime",
+            "type": "float",
+            "value": 0.0
+          },
+          {
+            "name": "u_Width",
+            "type": "float",
+            "value": 1.0
+          },
+          {
+            "name": "u_GlowMultiplier",
+            "type": "float",
+            "value": 1.0
+          },
+          {
+            "name": "u_FillAlpha",
+            "type": "float",
+            "value": 0.5
+          },
+          {
+            "name": "u_GradientFactor",
+            "type": "float",
+            "value": 80.0
+          },
+          {
+            "name": "u_FlowSpeed",
+            "type": "float",
+            "value": 10.0
+          },
+          {
+            "name": "u_FlowFactor",
+            "type": "float",
+            "value": 0.6
+          },
+          {
+            "name": "u_LiquidIntensity",
+            "type": "float",
+            "value": 5.0
+          },
+          {
+            "name": "u_LiquidFactor",
+            "type": "float",
+            "value": 5.0
+          },
+          {
+            "name": "u_OutlineAlpha",
+            "type": "float",
+            "value": 1.0
+          },
+          {
+            "name": "u_GlowInside",
+            "type": "float",
+            "value": 0.0
+          },
+          {
+            "name": "u_GlowQuality",
+            "type": "float",
+            "value": 2.0
+          },
+          {
+            "name": "u_FillMode",
+            "type": "float",
+            "value": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "vertex_shader": "minecraft:core/screenquad",
+      "fragment_shader": "minecraft:post/blit",
+      "inputs": [
+        {
+          "sampler_name": "In",
+          "target": "swap",
+          "bilinear": true
+        }
+      ],
+      "output": "minecraft:main",
+      "uniforms": {
+        "BlitConfig": [
+          {
+            "name": "ColorModulate",
+            "type": "vec4",
+            "value": [1.0, 1.0, 1.0, 1.0]
+          }
+        ]
+      }
+    }
+  ]
+}

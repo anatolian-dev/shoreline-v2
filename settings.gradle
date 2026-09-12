@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        maven {
+            name = 'Fabric'
+            url = 'https://maven.fabricmc.net/'
+        }
+        maven { url = 'https://repo.spongepowered.org/maven' }
+        maven {
+            url = 'https://api.modrinth.com/maven'
+            content {
+                includeGroup('maven.modrinth')
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+rootProject.name = "shoreline-v2"

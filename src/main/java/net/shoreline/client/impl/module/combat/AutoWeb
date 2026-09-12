@@ -1,0 +1,190 @@
+package net.shoreline.client.impl.module.combat;
+
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+
+import net.shoreline.client.api.config.*;
+import net.shoreline.client.api.module.GuiCategory;
+import net.shoreline.client.impl.event.network.PlayerUpdateEvent;
+import net.shoreline.client.impl.inventory.InventoryUtil;
+import net.shoreline.client.impl.module.impl.ObsidianPlacerModule;
+import net.shoreline.eventbus.annotation.EventListener;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class AutoWeb extends ObsidianPlacerModule
+{
+    public enum PlaceMode
+    {
+        LEGS,
+        HEAD,
+        BOTH
+    }
+
+    Config<Float> range = new NumberConfig.Builder<Float>("Range")
+            .setDefaultValue(4.5f)
+            .setMin(1.0f)
+            .setMax(6.0f)
+            .build();
+
+    Config<PlaceMode> placeMode = new EnumConfig.Builder<PlaceMode>("PlaceMode")
+            .setDefaultValue(PlaceMode.LEGS)
+            .build();
+
+    Config<Boolean> autoDisable = new BooleanConfig.Builder("AutoDisable")
+            .setDefaultValue(false)
+            .build();
+
+    Config<Integer> delay = new NumberConfig.Builder<Integer>("Delay")
+            .setDefaultValue(1)
+            .setMin(1)
+            .setMax(5)
+            .build();
+
+    Config<Integer> shiftTicks = new NumberConfig.Builder<Integer>("ShiftTicks")
+            .setDefaultValue(1)
+            .setMin(1)
+            .setMax(8)
+            .build();
+
+    private int cooldown = 0;
+
+    public AntiPhase()
+    {
+        super("AntiPhase", "Prevents enemies from phasing using cobwebs", GuiCategory.COMBAT);
+    }
+
+    @EventListener
+    public void onPlayerUpdate(PlayerUpdateEvent.Pre event)
+    {
+        if (checkNull())
+            return;
+
+        if (cooldown > 0)
+        {
+            cooldown--;
+            return;
+        }
+
+        Entity target = getTarget();
+
+        if (target == null)
+            return;
+
+        int slot = getWebSlot();
+
+        if (slot == -1)
+        {
+            if (autoDisable.getValue())
+                disable();
+
+            return;
+        }
+
+        List<BlockPos> positions = getPositions(target);
+
+        int placed = 0;
+
+        for (BlockPos pos : positions)
+        {
+            if (mc.world.getBlockState(pos).isAir())
+            {
+                runSingleBlockPlacement(pos, Blocks.SCAFFOLDING, slot);
+
+                placed++;
+
+                if (placed >= shiftTicks.getValue())
+                    break;
+            }
+        }
+
+        if (placed > 0)
+        {
+            cooldown = delay.getValue();
+        }
+        else if (autoDisable.getValue())
+        {
+            disable();
+        }
+    }
+
+    private Entity getTarget()
+    {
+        Entity best = null;
+
+        double bestDist = range.getValue();
+
+        for (Entity entity : mc.world.getEntities())
+        {
+            if (entity == mc.player)
+                continue;
+
+            if (!entity.isAlive())
+                continue;
+
+            double dist = mc.player.distanceTo(entity);
+
+            if (dist <= bestDist)
+            {
+                bestDist = dist;
+                best = entity;
+            }
+        }
+
+        return best;
+    }
+
+    private int getWebSlot()
+    {
+        ItemStack offhand = mc.player.getOffHandStack();
+
+        if (!offhand.isEmpty()
+                && offhand.getItem() == Items.COBWEB)
+        {
+            return mc.player.getInventory().selectedSlot;
+        }
+
+        return InventoryUtil.getHotbarItem(Items.COBWEB).getSlot();
+    }
+
+    private List<BlockPos> getPositions(Entity target)
+    {
+        Box bb = target.getBoundingBox();
+
+        double minX = bb.minX;
+        double maxX = bb.maxX;
+
+        double minZ = bb.minZ;
+        double maxZ = bb.maxZ;
+
+        int yLegs = (int) Math.floor(target.getY());
+        int yHead = (int) Math.floor(target.getY() + 1);
+
+        List<BlockPos> positions = new ArrayList<>();
+
+        if (placeMode.getValue() == PlaceMode.LEGS
+                || placeMode.getValue() == PlaceMode.BOTH)
+        {
+            positions.add(new BlockPos((int) Math.floor(minX), yLegs, (int) Math.floor(minZ)));
+            positions.add(new BlockPos((int) Math.floor(minX), yLegs, (int) Math.floor(maxZ)));
+            positions.add(new BlockPos((int) Math.floor(maxX), yLegs, (int) Math.floor(minZ)));
+            positions.add(new BlockPos((int) Math.floor(maxX), yLegs, (int) Math.floor(maxZ)));
+        }
+
+        if (placeMode.getValue() == PlaceMode.HEAD
+                || placeMode.getValue() == PlaceMode.BOTH)
+        {
+            positions.add(new BlockPos((int) Math.floor(minX), yHead, (int) Math.floor(minZ)));
+            positions.add(new BlockPos((int) Math.floor(minX), yHead, (int) Math.floor(maxZ)));
+            positions.add(new BlockPos((int) Math.floor(maxX), yHead, (int) Math.floor(minZ)));
+            positions.add(new BlockPos((int) Math.floor(maxX), yHead, (int) Math.floor(maxZ)));
+        }
+
+        return positions;
+    }
+}
