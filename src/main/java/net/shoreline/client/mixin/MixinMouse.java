@@ -1,6 +1,5 @@
 package net.shoreline.client.mixin;
 
-import com.llamalad7.mixinextras.sugar.Local;
 import net.minecraft.client.Mouse;
 import net.minecraft.client.input.MouseInput;
 import net.minecraft.client.network.ClientPlayerEntity;
@@ -18,9 +17,9 @@ public class MixinMouse
 {
     @Inject(method = "onMouseButton", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/option/KeyBinding;setKeyPressed(Lnet/minecraft/client/util/InputUtil$Key;Z)V"))
-    private void hookOnMouseButton(long window, MouseInput input, int action, CallbackInfo ci, @Local(name = "mouseInput") MouseInput mouseInput)
+    private void hookOnMouseButton(long window, MouseInput input, int action, CallbackInfo ci)
     {
-        InputEvent.Mouse inputEvent = new InputEvent.Mouse(mouseInput.button(), action, mouseInput.modifiers());
+        InputEvent.Mouse inputEvent = new InputEvent.Mouse(input.button(), action, input.modifiers());
         EventBus.INSTANCE.dispatch(inputEvent);
     }
 
