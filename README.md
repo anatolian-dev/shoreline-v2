@@ -1,6 +1,6 @@
 # Shoreline V2
 
-Experimental Minecraft 1.21.11 Fabric client mod built on the Shoreline v2 codebase.
+Experimental Minecraft 1.21.11 Fabric client mod built on lolwut's Shoreline v2 codebase.
 
 ## Features
 
@@ -11,7 +11,7 @@ Experimental Minecraft 1.21.11 Fabric client mod built on the Shoreline v2 codeb
 - **World**: Nuker, Timer, FastPlace, XRay, AutoTool
 - **Exploit**: NoFall, AntiHunger, Backtrack, Phase, Reach
 - **Misc**: FakePlayer, AutoReconnect, AutoRespawn, ChestStealer, Spammer
-- and many other
+and many other shit
 
 ## Building
 
@@ -26,10 +26,6 @@ The built jar will be in `build/libs/`:
 
 - Java 21
 - Gradle (wrapper included)
-
-## License
-
-Private - All rights reserved.
 
 ## Features & Modules
 
