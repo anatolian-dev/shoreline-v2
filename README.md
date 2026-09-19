@@ -2,17 +2,6 @@
 
 Experimental Minecraft 1.21.11 Fabric client mod built on lolwut's Shoreline v2 codebase.
 
-## Features
-
-- **Combat Modules**: KillAura, AutoCrystal, AutoPot, AnchorAura, Criticals, and more
-- **Movement**: Flight, Speed, Scaffold, Phase, Elytra, Jesus, Velocity
-- **Render**: ESP, Chams, Tracers, Nametags, NoRender, Shaders, Skybox
-- **HUD**: ArrayList, Coords, Speed, Ping, FPS, TPS, Potions, Notifications
-- **World**: Nuker, Timer, FastPlace, XRay, AutoTool
-- **Exploit**: NoFall, AntiHunger, Backtrack, Phase, Reach
-- **Misc**: FakePlayer, AutoReconnect, AutoRespawn, ChestStealer, Spammer
-and many other shit
-
 ## Building
 
 ```bash
