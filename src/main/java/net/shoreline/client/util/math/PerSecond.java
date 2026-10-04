@@ -1,24 +1,38 @@
 package net.shoreline.client.util.math;
 
-import java.util.concurrent.CopyOnWriteArrayList;
-
 public class PerSecond
 {
-    private final CopyOnWriteArrayList<Long> counter = new CopyOnWriteArrayList<>();
+    private static final int BUCKET_COUNT = 20; // 20 buckets * 50ms = 1000ms window
+    private static final long BUCKET_SIZE_MS = 50L;
 
-    public void count()
+    private final int[] counts = new int[BUCKET_COUNT];
+    private final long[] bucketTimes = new long[BUCKET_COUNT];
+
+    public synchronized void count()
     {
-        counter.add(System.currentTimeMillis() + 1000L);
+        long now = System.currentTimeMillis();
+        long bucket = now / BUCKET_SIZE_MS;
+        int idx = (int) (bucket % BUCKET_COUNT);
+        if (bucketTimes[idx] != bucket)
+        {
+            bucketTimes[idx] = bucket;
+            counts[idx] = 0;
+        }
+        counts[idx]++;
     }
 
-    public int getPerSecond()
+    public synchronized int getPerSecond()
     {
-        long time = System.currentTimeMillis();
-        while (!counter.isEmpty() && counter.getFirst() != null && counter.getFirst() < time)
+        long now = System.currentTimeMillis();
+        long currentBucket = now / BUCKET_SIZE_MS;
+        int total = 0;
+        for (int i = 0; i < BUCKET_COUNT; i++)
         {
-            counter.removeFirst();
+            if (currentBucket - bucketTimes[i] < BUCKET_COUNT)
+            {
+                total += counts[i];
+            }
         }
-
-        return counter.size();
+        return total;
     }
 }

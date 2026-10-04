@@ -247,25 +247,38 @@ public class ClickGuiScreen extends Screen
         int keyCode = input.key();
         int scanCode = input.scancode();
         int modifiers = input.modifiers();
-        boolean shouldCloseOnEsc = true;
-        for (Frame frame : guiFrames)
+
+        if (keyCode == GLFW.GLFW_KEY_ESCAPE)
         {
-            for (FrameComponent component : frame.getAllComponents())
+            boolean hadActiveInput = false;
+            for (Frame frame : guiFrames)
             {
-                if (component instanceof KeyListenerComponent keyListener && keyListener.isListening()
-                        || component instanceof TextComponent text && text.isTyping())
+                for (FrameComponent component : frame.getAllComponents())
                 {
-                    shouldCloseOnEsc = false;
-                    break;
+                    if (component instanceof KeyListenerComponent keyListener && keyListener.isListening())
+                    {
+                        keyListener.setListening(false);
+                        hadActiveInput = true;
+                    }
+                    else if (component instanceof TextComponent text && text.isTyping())
+                    {
+                        text.setTyping(false);
+                        hadActiveInput = true;
+                    }
                 }
             }
 
-            frame.keyPressed(keyCode, scanCode, modifiers);
+            if (!hadActiveInput)
+            {
+                close();
+                return true;
+            }
+            return true;
         }
 
-        if (keyCode == 256 && shouldCloseOnEsc)
+        for (Frame frame : guiFrames)
         {
-            startClosing();
+            frame.keyPressed(keyCode, scanCode, modifiers);
         }
 
         return super.keyPressed(input);

@@ -11,11 +11,16 @@ import net.shoreline.client.impl.module.impl.hud.HudModule;
 public class WatermarkHudModule extends HudModule
 {
     Config<Boolean> versionConfig = new BooleanConfig.Builder("Version")
+            .setDescription("Displays client version")
             .setDefaultValue(true).build();
+    Config<Boolean> ownerConfig = new BooleanConfig.Builder("Owner")
+            .setDescription("Disables -anatolian suffix")
+            .setDefaultValue(false).build();
 
     public WatermarkHudModule()
     {
         super("Watermark", "Displays the client name and version", 2, 2);
+        this.enabled.setValue(true);
     }
 
     @Override
@@ -27,7 +32,7 @@ public class WatermarkHudModule extends HudModule
     @Override
     public float getWidth()
     {
-        return getTextWidth(getText());
+        return getTextWidth(getText()) + 4;
     }
 
     @Override
@@ -40,11 +45,8 @@ public class WatermarkHudModule extends HudModule
     {
         if (versionConfig.getValue())
         {
-            return String.format("%s " + Formatting.WHITE + "%s %s-%s",
-                                 ShorelineMod.MOD_NAME,
-                                 ShorelineMod.MOD_VER,
-                                 BuildConfig.BUILD_IDENTIFIER,
-                                 BuildConfig.HASH);
+            String suffix = ownerConfig.getValue() ? "" : "-anatolian";
+            return ShorelineMod.MOD_NAME + " " + Formatting.WHITE + "2.4 beta" + suffix;
         }
 
         return ShorelineMod.MOD_NAME;

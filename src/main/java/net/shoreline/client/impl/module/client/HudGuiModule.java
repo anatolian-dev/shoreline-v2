@@ -37,39 +37,19 @@ public class HudGuiModule extends ListeningToggleable
 
     public HudGuiModule()
     {
-        super("HUD", "Heads up display", GuiCategory.CLIENT);
+        super("HUD", "Toggles displaying the on-screen HUD elements", GuiCategory.CLIENT);
         INSTANCE = this;
-    }
-
-    @Override
-    public void onEnable()
-    {
-        if (checkNull())
-        {
-            disable();
-            return;
-        }
-
-        ClickGuiModule.INSTANCE.disable();
-        ClickGuiModule.INSTANCE.setFadeState(true);
-        mc.setScreen(HudGuiScreen.INSTANCE);
-    }
-
-    @Override
-    public void onDisable()
-    {
-        if (checkNull())
-        {
-            return;
-        }
-
-        ClickGuiModule.INSTANCE.setFadeState(false);
-        mc.player.closeScreen();
+        enabled.setValue(true);
     }
 
     @EventListener
     public void onHudOverlay(HudOverlayEvent.Post event)
     {
+        if (checkNull() || !isEnabled())
+        {
+            return;
+        }
+
         if (mc.currentScreen != null && !(mc.currentScreen instanceof ChatScreen))
         {
             return;

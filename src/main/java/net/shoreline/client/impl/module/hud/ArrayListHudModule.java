@@ -3,6 +3,7 @@ package net.shoreline.client.impl.module.hud;
 import net.minecraft.util.Formatting;
 import net.shoreline.client.api.config.BooleanConfig;
 import net.shoreline.client.api.config.Config;
+import net.shoreline.client.api.config.NumberConfig;
 import net.shoreline.client.api.module.Module;
 import net.shoreline.client.api.module.Toggleable;
 import net.shoreline.client.impl.Managers;
@@ -11,6 +12,9 @@ import net.shoreline.client.impl.module.impl.hud.DynamicHudModule;
 
 public class ArrayListHudModule extends DynamicHudModule
 {
+    Config<Float> scale = new NumberConfig.Builder<Float>("Scale")
+            .setMin(0.5f).setMax(2.5f).setDefaultValue(1.0f)
+            .setDescription("Size scaling of arraylist").build();
     Config<Boolean> showInfo = new BooleanConfig.Builder("ShowInfo")
             .setDescription("Shows extra module info")
             .setDefaultValue(true).build();
@@ -18,6 +22,12 @@ public class ArrayListHudModule extends DynamicHudModule
     public ArrayListHudModule()
     {
         super("ArrayList", "Displays the currently enabled modules", 40, 40);
+    }
+
+    @Override
+    public float getScale()
+    {
+        return scale.getValue();
     }
 
     @Override

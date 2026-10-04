@@ -38,12 +38,13 @@ public class CombatModule extends TargetingModule
                         PlayerInteractEntityC2SPacket.ATTACK)
         );
 
+        Hand swingHand = hand != null ? hand : Hand.MAIN_HAND;
         if (swing)
         {
-            mc.player.swingHand(hand);
+            mc.player.swingHand(swingHand);
         } else
         {
-            sendPacket(new HandSwingC2SPacket(hand));
+            sendPacket(new HandSwingC2SPacket(swingHand));
         }
     }
 }

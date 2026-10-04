@@ -57,11 +57,10 @@ public class Frame extends DrawableComponent implements Interactable
                               float delta)
     {
 
-        Mouse mouse = ClickGuiScreen.INSTANCE.getMouse();
         if (isDragging())
         {
-            x += mouse.getMouseX() - px;
-            y += mouse.getMouseY() - py;
+            x += mouseX - px;
+            y += mouseY - py;
         }
 
         Theme theme = ClickGuiScreen.INSTANCE.getTheme();
@@ -100,8 +99,8 @@ public class Frame extends DrawableComponent implements Interactable
             disableScissor(context);
         }
 
-        px = mouse.getMouseX();
-        py = mouse.getMouseY();
+        px = mouseX;
+        py = mouseY;
     }
 
     @Override

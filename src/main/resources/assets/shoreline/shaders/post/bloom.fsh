@@ -227,15 +227,17 @@ void main()
     }
 
     float glow = blur(center, true, oneTexel);
-    if (glow == 0.0)
+    if (glow <= 0.0)
     {
-        discard;
+        fragColor = vec4(0.0);
+        return;
     }
 
     bool edge = false;
-    for (int x = -1; x <= 1 && !edge; ++x)
+    int r = max(1, int(ceil(u_Width)));
+    for (int x = -r; x <= r && !edge; ++x)
     {
-        for (int y = -1; y <= 1 && !edge; ++y)
+        for (int y = -r; y <= r && !edge; ++y)
         {
             if (x == 0 && y == 0) continue;
 
@@ -253,7 +255,7 @@ void main()
     }
     else
     {
-       outlineRGB = getSobelColor(texCoord, oneTexel);
+        outlineRGB = getSobelColor(texCoord, oneTexel);
     }
 
     if (outlineRGB.r + outlineRGB.g + outlineRGB.b == 0.0)

@@ -585,7 +585,7 @@ public class AutoCrystalModule extends ObsidianPlacerModule
             }
         }
 
-        sendAttackPacketsInternal(crystalId, swingConfig.getValue(), hand);
+        sendAttackPacketsInternal(crystalId, swingConfig.getValue(), hand != null ? hand : Hand.MAIN_HAND);
         optimizer.setDead(crystalId);
 
         if (!canBreakCrystal)

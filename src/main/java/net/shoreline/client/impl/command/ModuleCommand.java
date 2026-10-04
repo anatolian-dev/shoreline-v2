@@ -9,6 +9,8 @@ import net.shoreline.client.api.config.BooleanConfig;
 import net.shoreline.client.api.config.Config;
 import net.shoreline.client.api.module.Module;
 import net.shoreline.client.impl.command.util.ConfigParser;
+import net.minecraft.util.Formatting;
+import net.shoreline.client.api.module.Toggleable;
 import net.shoreline.client.impl.render.ClientFormatting;
 
 public class ModuleCommand extends Command
@@ -24,6 +26,19 @@ public class ModuleCommand extends Command
     @Override
     public void buildCommand(LiteralArgumentBuilder<CommandSource> argumentBuilder)
     {
+        argumentBuilder.executes(context ->
+        {
+            if (module instanceof Toggleable t)
+            {
+                t.toggle();
+                sendClientChatMessage(Formatting.GRAY + module.getName() + Formatting.RESET + " is now " +
+                        (t.isEnabled() ? Formatting.GREEN + "enabled" : Formatting.RED + "disabled"));
+                return 1;
+            }
+            sendClientChatMessage(Formatting.GRAY + module.getName() + ": " + Formatting.RESET + module.getDescription());
+            return 1;
+        });
+
         argumentBuilder.then(buildArgument("config", ConfigArgumentType.config(module))
             .then(buildArgument("value", StringArgumentType.greedyString())
                 .suggests((context, builder) ->

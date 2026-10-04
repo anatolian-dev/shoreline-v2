@@ -3,12 +3,15 @@ package net.shoreline.client.impl.module.combat;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BowItem;
 import net.minecraft.item.Items;
+import net.minecraft.util.math.Vec3d;
+import net.shoreline.client.api.config.BooleanConfig;
 import net.shoreline.client.api.config.Config;
 import net.shoreline.client.api.config.NumberConfig;
 import net.shoreline.client.api.module.GuiCategory;
 import net.shoreline.client.api.module.Toggleable;
 import net.shoreline.client.impl.Managers;
 import net.shoreline.client.impl.event.TickEvent;
+import net.shoreline.client.impl.module.combat.util.MovementExtrapolation;
 import net.shoreline.client.impl.rotation.Rotation;
 import net.shoreline.eventbus.annotation.EventListener;
 
@@ -18,6 +21,9 @@ public class BowAimModule extends Toggleable
             .setMin(5.0f).setMax(60.0f).setDefaultValue(35.0f).setFormat("m")
             .setDescription("Maximum range to aim at targets")
             .build();
+    Config<Boolean> predictConfig = new BooleanConfig.Builder("Predict")
+            .setDescription("Predicts moving target positions using block collision physics")
+            .setDefaultValue(true).build();
 
     public BowAimModule()
     {
@@ -48,10 +54,28 @@ public class BowAimModule extends Toggleable
         }
 
         float speed = pullProgress * 3.0f;
-        double dx = target.getX() - mc.player.getX();
-        double dz = target.getZ() - mc.player.getZ();
+        double directDx = target.getX() - mc.player.getX();
+        double directDz = target.getZ() - mc.player.getZ();
+        double directDist = Math.sqrt(directDx * directDx + directDz * directDz);
+
+        Vec3d targetPos = target.getEntityPos();
+        if (predictConfig.getValue())
+        {
+            int ticks = (int) Math.round(directDist / Math.max(0.1, speed));
+            if (ticks > 0)
+            {
+                targetPos = MovementExtrapolation.extrapolatePosition(mc.world,
+                        box -> mc.world.getBlockCollisions(null, box),
+                        target.getVelocity(),
+                        target.getBoundingBox(),
+                        ticks);
+            }
+        }
+
+        double dx = targetPos.x - mc.player.getX();
+        double dz = targetPos.z - mc.player.getZ();
         double dist = Math.sqrt(dx * dx + dz * dz);
-        double dy = (target.getY() + target.getEyeHeight(target.getPose()) * 0.5) - mc.player.getEyeY();
+        double dy = (targetPos.y + target.getEyeHeight(target.getPose()) * 0.5) - mc.player.getEyeY();
 
         double gravity = 0.05;
         double v2 = speed * speed;

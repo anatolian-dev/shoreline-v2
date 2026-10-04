@@ -42,24 +42,53 @@ public abstract class DynamicHudModule extends HudModule
     @Override
     public void drawHudComponent(DrawContext context, float tickDelta)
     {
+        float s = getScale();
+        if (s != 1.0f)
+        {
+            context.getMatrices().pushMatrix();
+            context.getMatrices().translate(getX(), getY());
+            context.getMatrices().scale(s, s);
+            context.getMatrices().translate(-getX(), -getY());
+        }
+
         drawEntries(context, tickDelta);
         cacheWidth();
+
+        if (s != 1.0f)
+        {
+            context.getMatrices().popMatrix();
+        }
 
         float center = mc.getWindow().getScaledHeight() / 2f;
         top  = !(getY() + (getHeight() / 2.0f) > center);
         left = getX() + (getWidth() / 2f) < mc.getWindow().getScaledWidth() / 2f;
     }
 
+    public float getScale()
+    {
+        return 1.0f;
+    }
+
+    public float getRawWidth()
+    {
+        return width;
+    }
+
+    public float getRawHeight()
+    {
+        return offset;
+    }
+
     @Override
     public float getWidth()
     {
-        return width;
+        return getRawWidth() * getScale();
     }
 
     @Override
     public float getHeight()
     {
-        return offset;
+        return getRawHeight() * getScale();
     }
 
     public void drawEntries(DrawContext context, float tickDelta)
@@ -70,7 +99,7 @@ public abstract class DynamicHudModule extends HudModule
         {
             if (entry.isDrawing() || !entry.isDone())
             {
-                entry.draw(context, getX() + (isLeft() ? 0 : getWidth()), getY(), offset, tickDelta);
+                entry.draw(context, getX() + (isLeft() ? 0 : getRawWidth()), getY(), offset, tickDelta);
             }
         }
     }

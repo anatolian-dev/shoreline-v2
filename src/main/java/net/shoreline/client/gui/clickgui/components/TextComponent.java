@@ -23,6 +23,7 @@ public class TextComponent extends FrameComponent
     private final Deque<Character> buffer = new ArrayDeque<>();
 
     @Getter
+    @lombok.Setter
     private boolean typing;
 
     private boolean showInsertionPoint;

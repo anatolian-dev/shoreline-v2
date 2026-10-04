@@ -4,12 +4,16 @@ import net.minecraft.util.Formatting;
 import net.minecraft.world.World;
 import net.shoreline.client.api.config.BooleanConfig;
 import net.shoreline.client.api.config.Config;
+import net.shoreline.client.api.config.NumberConfig;
 import net.shoreline.client.impl.module.impl.hud.DynamicEntry;
 import net.shoreline.client.impl.module.impl.hud.DynamicHudModule;
 import net.shoreline.client.impl.render.ClientFormatting;
 
 public class CoordsHudModule extends DynamicHudModule
 {
+    Config<Float> scale = new NumberConfig.Builder<Float>("Scale")
+            .setMin(0.5f).setMax(2.5f).setDefaultValue(1.0f)
+            .setDescription("Size scaling of coordinates text").build();
     Config<Boolean> netherConfig = new BooleanConfig.Builder("Nether")
             .setDescription("Show nether coordinates")
             .setDefaultValue(true).build();
@@ -20,6 +24,13 @@ public class CoordsHudModule extends DynamicHudModule
     public CoordsHudModule()
     {
         super("Coords", "Displays the player coordinates", 200, 400);
+        this.enabled.setValue(true);
+    }
+
+    @Override
+    public float getScale()
+    {
+        return scale.getValue();
     }
 
     @Override

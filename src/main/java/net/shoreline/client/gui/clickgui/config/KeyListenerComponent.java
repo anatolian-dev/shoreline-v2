@@ -19,6 +19,7 @@ import net.shoreline.client.util.Keyboard;
 import org.lwjgl.glfw.GLFW;
 
 @Getter
+@lombok.Setter
 public class KeyListenerComponent extends ConfigComponent<Macro>
 {
     private boolean listening;
