@@ -1,16 +1,17 @@
 package net.shoreline.client.impl.module.hud;
 
-import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gl.RenderPipelines;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.texture.Sprite;
 import net.minecraft.client.util.SpriteIdentifier;
-import net.minecraft.util.Identifier;
-import org.joml.Matrix3x2fStack;
 import net.minecraft.entity.effect.StatusEffect;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Identifier;
+import org.joml.Matrix3x2fStack;
+
 import net.shoreline.client.api.config.BooleanConfig;
 import net.shoreline.client.api.config.Config;
 import net.shoreline.client.api.config.EnumConfig;
@@ -22,21 +23,36 @@ import net.shoreline.client.impl.render.ColorUtil;
 import net.shoreline.eventbus.annotation.EventListener;
 
 import java.awt.*;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 
 public class PotionsHudModule extends DynamicHudModule
 {
-    private static final Identifier MOB_EFFECTS_ATLAS = Identifier.ofVanilla("textures/atlas/mob_effects.png");
+    /*
+     * Minecraft 1.21.6+:
+     * The old mob_effects atlas no longer exists.
+     * Potion effect sprites are now located in the GUI atlas.
+     */
+    private static final Identifier GUI_ATLAS =
+            Identifier.ofVanilla("textures/atlas/gui.png");
 
     Config<PotionColors> potionColors = new EnumConfig.Builder<PotionColors>("Color")
             .setValues(PotionColors.values())
             .setDescription("The potion colors in hud")
-            .setDefaultValue(PotionColors.DEFAULT).build();
+            .setDefaultValue(PotionColors.DEFAULT)
+            .build();
+
     Config<Boolean> potionIcons = new BooleanConfig.Builder("Icons")
             .setDescription("Shows the potion icon")
-            .setDefaultValue(false).build();
+            .setDefaultValue(false)
+            .build();
 
+    //    Config<Collection<StatusEffect>> blacklist = new RegistryConfig.Builder<StatusEffect>("Blacklist")
+    //            .setRegistry(Registries.STATUS_EFFECT)
+    //            .setDescription("What potions to blacklist")
+    //            .build();
 
     private final Map<StatusEffect, String> nameMap = new HashMap<>();
 
@@ -46,7 +62,9 @@ public class PotionsHudModule extends DynamicHudModule
     }
 
     @Override
-    public void onEnable() {}
+    public void onEnable()
+    {
+    }
 
     @EventListener
     public void onFinishedLoading(LoadingEvent.Finished event)
@@ -59,25 +77,45 @@ public class PotionsHudModule extends DynamicHudModule
     {
         for (StatusEffect effect : Registries.STATUS_EFFECT)
         {
-            RegistryEntry<StatusEffect> entry = Registries.STATUS_EFFECT.getEntry(effect);
-            Identifier effectId = Registries.STATUS_EFFECT.getId(effect);
-            SpriteIdentifier spriteId = new SpriteIdentifier(MOB_EFFECTS_ATLAS, effectId.withPrefixedPath("mob_effect/"));
+            RegistryEntry<StatusEffect> entry =
+                    Registries.STATUS_EFFECT.getEntry(effect);
+
+            Identifier effectId =
+                    Registries.STATUS_EFFECT.getId(effect);
+
+            /*
+             * 1.21.11 equivalent of:
+             *
+             * mc.getStatusEffectSpriteManager().getSprite(entry)
+             *
+             * Status effect sprites are now in the GUI atlas.
+             */
+            SpriteIdentifier spriteId = new SpriteIdentifier(
+                    GUI_ATLAS,
+                    effectId.withPrefixedPath("mob_effect/")
+            );
+
             getHudEntries().add(new DynamicPotionEntry(
                     this,
                     mc.getAtlasManager().getSprite(spriteId),
                     () -> decorate(entry, effect),
                     () -> mc.player != null && mc.player.hasStatusEffect(entry),
-                    () -> getPotionColor(entry, effect)));
+                    () -> getPotionColor(entry, effect)
+            ));
         }
     }
 
     @Override
-    public void onDisable() {}
+    public void onDisable()
+    {
+    }
 
     @Override
     public void sortEntries()
     {
-        getHudEntries().sort(Comparator.comparing(entry -> entry.getText().get()));
+        getHudEntries().sort(
+                Comparator.comparing(entry -> entry.getText().get())
+        );
     }
 
     @Override
@@ -86,20 +124,34 @@ public class PotionsHudModule extends DynamicHudModule
         return super.getWidth() + (potionIcons.getValue() ? 13 : 0);
     }
 
-    public String decorate(RegistryEntry<StatusEffect> entry, StatusEffect effect)
+    public String decorate(
+            RegistryEntry<StatusEffect> entry,
+            StatusEffect effect)
     {
         if (mc.player.getStatusEffect(entry) != null)
         {
-            StatusEffectInstance instance = mc.player.getStatusEffect(entry);
-            String decorated = effect.getName().getString() + (instance.getAmplifier() > 0
-                    ? " " + (instance.getAmplifier() + 1)
-                    : "") + " " + Formatting.WHITE + getPotionDuration(instance);
+            StatusEffectInstance instance =
+                    mc.player.getStatusEffect(entry);
+
+            String decorated =
+                    effect.getName().getString()
+                            + (instance.getAmplifier() > 0
+                            ? " " + (instance.getAmplifier() + 1)
+                            : "")
+                            + " "
+                            + Formatting.WHITE
+                            + getPotionDuration(instance);
+
             nameMap.put(effect, decorated);
+
             return decorated;
         }
 
         String str = nameMap.get(effect);
-        return str == null ? effect.getName().getString() : str;
+
+        return str == null
+                ? effect.getName().getString()
+                : str;
     }
 
     private String getPotionDuration(StatusEffectInstance instance)
@@ -111,23 +163,29 @@ public class PotionsHudModule extends DynamicHudModule
         else
         {
             int duration = instance.getDuration();
+
             int mins = duration / 1200;
             int sec = (duration % 1200) / 20;
+
             return mins + ":" + (sec < 10 ? "0" + sec : sec);
         }
     }
 
-    public int getPotionColor(RegistryEntry<StatusEffect> entry, StatusEffect effect)
+    public int getPotionColor(
+            RegistryEntry<StatusEffect> entry,
+            StatusEffect effect)
     {
         if (potionColors.getValue() == PotionColors.DEFAULT)
         {
             return effect.getColor();
-        } else if (potionColors.getValue() == PotionColors.THEME)
+        }
+        else if (potionColors.getValue() == PotionColors.THEME)
         {
             return ThemeModule.COLOR;
         }
 
         String id = entry.getIdAsString();
+
         return switch (id.replace("minecraft:", ""))
         {
             case "speed" -> 8171462;
@@ -166,39 +224,84 @@ public class PotionsHudModule extends DynamicHudModule
         private final Sprite sprite;
         private final Supplier<Integer> color;
 
-        public DynamicPotionEntry(DynamicHudModule mod, Sprite sprite, Supplier<String> text, Supplier<Boolean> drawing, Supplier<Integer> color)
+        public DynamicPotionEntry(
+                DynamicHudModule mod,
+                Sprite sprite,
+                Supplier<String> text,
+                Supplier<Boolean> drawing,
+                Supplier<Integer> color)
         {
             super(mod, text, drawing);
+
             this.sprite = sprite;
             this.color = color;
         }
 
         @Override
-        public void drawText(DrawContext context, String string, float x, float y)
+        public void drawText(
+                DrawContext context,
+                String string,
+                float x,
+                float y)
         {
             Matrix3x2fStack matrices = context.getMatrices();
+
             if (sprite != null && potionIcons.getValue())
             {
                 matrices.pushMatrix();
-                matrices.translate(x - 12.5f, y - 2.5f);
-                context.drawSpriteStretched(RenderPipelines.GUI_TEXTURED, sprite, 0, 0, 11, 11);
+
+                matrices.translate(
+                        x - 12.5f,
+                        y - 2.5f
+                );
+
+                context.drawSpriteStretched(
+                        RenderPipelines.GUI_TEXTURED,
+                        sprite,
+                        0,
+                        0,
+                        11,
+                        11
+                );
+
                 matrices.popMatrix();
             }
 
             int c = color.get();
+
             if (c == ThemeModule.COLOR)
             {
-                getModule().drawTextTransparency(context, string, x, y, (float) yAnimation.getFactor());
+                getModule().drawTextTransparency(
+                        context,
+                        string,
+                        x,
+                        y,
+                        (float) yAnimation.getFactor()
+                );
+
                 return;
             }
 
-            c = ColorUtil.withTransparency(new Color(c), 1.0f);
-            getModule().drawTextTransparency(context, string, x, y, c, (float) yAnimation.getFactor());
+            c = ColorUtil.withTransparency(
+                    new Color(c),
+                    1.0f
+            );
+
+            getModule().drawTextTransparency(
+                    context,
+                    string,
+                    x,
+                    y,
+                    c,
+                    (float) yAnimation.getFactor()
+            );
         }
     }
 
     private enum PotionColors
     {
-        DEFAULT, OLD, THEME
+        DEFAULT,
+        OLD,
+        THEME
     }
 }
