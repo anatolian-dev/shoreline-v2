@@ -1,6 +1,8 @@
 package net.shoreline.client.impl.mining;
 
+import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.Enchantments;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -57,7 +59,11 @@ public class MiningManager extends GenericFeature
             return;
         }
 
-        maxPickaxeStack.addEnchantment(EnchantUtil.getEntry(Enchantments.EFFICIENCY), 5);
+        RegistryEntry<Enchantment> efficiencyEntry = EnchantUtil.getEntry(Enchantments.EFFICIENCY);
+        if (efficiencyEntry != null)
+        {
+            maxPickaxeStack.addEnchantment(efficiencyEntry, 5);
+        }
 
         for (MiningData data : miningBlocks.values())
         {

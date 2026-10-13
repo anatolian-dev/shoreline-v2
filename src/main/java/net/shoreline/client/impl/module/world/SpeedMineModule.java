@@ -108,8 +108,9 @@ public class SpeedMineModule extends ListeningToggleable
     @Override
     public String getModuleData()
     {
-        return mainMiningBlock != null ? (mainMiningBlock.isDoneMining() ? Formatting.GREEN : Formatting.WHITE) +
-                String.format("%.1f", Math.min(mainMiningBlock.getBlockDamage(), 1.0f)) : super.getModuleData();
+        MiningData block = mainMiningBlock;
+        return block != null ? (block.isDoneMining() ? Formatting.GREEN : Formatting.WHITE) +
+                String.format("%.1f", Math.min(block.getBlockDamage(), 1.0f)) : super.getModuleData();
     }
 
     @Override

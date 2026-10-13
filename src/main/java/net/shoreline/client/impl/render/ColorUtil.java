@@ -9,6 +9,7 @@ public class ColorUtil
 {
     public int interpolateColor(float value, int c1, int c2)
     {
+        value = Math.max(0.0f, Math.min(1.0f, value));
         float[] s = getRGBValues(c1);
         float[] e = getRGBValues(c2);
         return new Color(s[0] * value + e[0] * (1.0f - value),
@@ -19,6 +20,7 @@ public class ColorUtil
 
     public int withTransparency(Color color, float alpha)
     {
+        alpha = Math.max(0.0f, Math.min(1.0f, alpha));
         float[] rgb = getRGBValues(color.getRGB());
         return new Color(rgb[0], rgb[1], rgb[2], alpha).getRGB();
     }

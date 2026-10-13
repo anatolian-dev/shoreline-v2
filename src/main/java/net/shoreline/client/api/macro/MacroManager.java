@@ -63,7 +63,7 @@ public class MacroManager extends GenericFeature
                     || action == GLFW.GLFW_REPEAT))
             {
                 hold.onKeyPress();
-            } else if (action == GLFW.GLFW_RELEASE)
+            } else if (eventKey == key && action == GLFW.GLFW_RELEASE)
             {
                 hold.onKeyRelease();
             }

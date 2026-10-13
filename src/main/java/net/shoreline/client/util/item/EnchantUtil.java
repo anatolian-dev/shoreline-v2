@@ -19,13 +19,24 @@ public class EnchantUtil
 {
     public RegistryEntry<Enchantment> getEntry(RegistryKey<Enchantment> key)
     {
-        RegistryWrapper.WrapperLookup mcLookup = MinecraftClient.getInstance().world.getRegistryManager();
-        return mcLookup.getOrThrow(RegistryKeys.ENCHANTMENT).getOptional(key).orElse(null);
+        try
+        {
+            RegistryWrapper.WrapperLookup mcLookup = MinecraftClient.getInstance().world.getRegistryManager();
+            return mcLookup.getOrThrow(RegistryKeys.ENCHANTMENT).getOptional(key).orElse(null);
+        }
+        catch (Exception e)
+        {
+            return null;
+        }
     }
 
     public int getLevel(RegistryKey<Enchantment> key, ItemStack stack)
     {
         RegistryEntry<Enchantment> entry = getEntry(key);
+        if (entry == null)
+        {
+            return 0;
+        }
         return EnchantmentHelper.getLevel(entry, stack);
     }
 
