@@ -208,6 +208,7 @@ public class InventoryManager extends NetworkHandler
         if (slot != serverSlot)
         {
             sendPacket(new UpdateSelectedSlotC2SPacket(slot));
+            serverSlot = slot;
         }
     }
 
@@ -242,6 +243,7 @@ public class InventoryManager extends NetworkHandler
             case HOTBAR ->
             {
                 sendPacket(new UpdateSelectedSlotC2SPacket(itemSlot));
+                serverSlot = itemSlot;
                 trackedHotbar.add(data);
             }
             case INVENTORY ->
@@ -272,10 +274,11 @@ public class InventoryManager extends NetworkHandler
         {
             case HOTBAR ->
             {
-                if (isSilentSwapping())
+                int returnSlot = multitick.isSwapped() && !mc.player.isUsingItem() ? multitick.getSlotTo() : playerInventory.getSelectedSlot();
+                if (serverSlot != returnSlot)
                 {
-                    int returnSlot = multitick.isSwapped() && !mc.player.isUsingItem() ? multitick.getSlotTo() : playerInventory.getSelectedSlot();
                     sendPacket(new UpdateSelectedSlotC2SPacket(returnSlot));
+                    serverSlot = returnSlot;
                 }
             }
 
@@ -297,6 +300,7 @@ public class InventoryManager extends NetworkHandler
         if (serverSlot != itemSlot)
         {
             sendPacket(new UpdateSelectedSlotC2SPacket(itemSlot));
+            serverSlot = itemSlot;
         }
 
         return true;
@@ -312,7 +316,9 @@ public class InventoryManager extends NetworkHandler
         usingItem = false;
         if (isSilentSwapping())
         {
-            sendPacket(new UpdateSelectedSlotC2SPacket(mc.player.getInventory().getSelectedSlot()));
+            int returnSlot = mc.player.getInventory().getSelectedSlot();
+            sendPacket(new UpdateSelectedSlotC2SPacket(returnSlot));
+            serverSlot = returnSlot;
         }
 
         multitick.reset();

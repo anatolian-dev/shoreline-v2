@@ -39,7 +39,10 @@ public class MiningUtil
         if (f > 1.0f)
         {
             int lvl = EnchantUtil.getLevel(Enchantments.EFFICIENCY, miningStack);
-            f += (float) lvl * lvl;
+            if (lvl > 0 && !miningStack.isEmpty())
+            {
+                f += (float) (lvl * lvl + 1);
+            }
         }
         if (StatusEffectUtil.hasHaste(player))
         {
@@ -58,11 +61,27 @@ public class MiningUtil
             f *= g;
         }
 
-        f *= (float) player.getAttributeValue(EntityAttributes.BLOCK_BREAK_SPEED);
+        if (player.isSubmergedIn(net.minecraft.registry.tag.FluidTags.WATER) && !EnchantUtil.has(Enchantments.AQUA_AFFINITY, player.getEquippedStack(net.minecraft.entity.EquipmentSlot.HEAD)))
+        {
+            f /= 5.0f;
+        }
+
         if (!player.isOnGround())
         {
             f /= 5.0f;
         }
+
+        try
+        {
+            if (player.getAttributes() != null && player.getAttributes().hasAttribute(EntityAttributes.BLOCK_BREAK_SPEED))
+            {
+                f *= (float) player.getAttributeValue(EntityAttributes.BLOCK_BREAK_SPEED);
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+
         return f;
     }
 }

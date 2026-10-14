@@ -32,12 +32,42 @@ public class EnchantUtil
 
     public int getLevel(RegistryKey<Enchantment> key, ItemStack stack)
     {
-        RegistryEntry<Enchantment> entry = getEntry(key);
-        if (entry == null)
+        if (stack == null || stack.isEmpty())
         {
             return 0;
         }
-        return EnchantmentHelper.getLevel(entry, stack);
+
+        try
+        {
+            for (Object2IntMap.Entry<RegistryEntry<Enchantment>> entry : stack.getEnchantments().getEnchantmentEntries())
+            {
+                if (entry.getKey().matchesKey(key))
+                {
+                    return entry.getIntValue();
+                }
+            }
+        }
+        catch (Exception ignored)
+        {
+        }
+
+        RegistryEntry<Enchantment> entry = getEntry(key);
+        if (entry != null)
+        {
+            try
+            {
+                return EnchantmentHelper.getLevel(entry, stack);
+            }
+            catch (Exception ignored)
+            {
+            }
+        }
+        return 0;
+    }
+
+    public boolean has(RegistryKey<Enchantment> key, ItemStack stack)
+    {
+        return getLevel(key, stack) > 0;
     }
 
     public boolean isEnchantsObfuscated(ItemStack itemStack)

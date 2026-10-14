@@ -3,6 +3,8 @@ package net.shoreline.client.impl.module.world;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import net.minecraft.block.BlockState;
+import net.minecraft.network.packet.c2s.play.HandSwingC2SPacket;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
@@ -40,9 +42,16 @@ public class SpeedMineModule extends ListeningToggleable
     Config<MiningPackets> miningPackets = new EnumConfig.Builder<MiningPackets>("Mode")
             .setValues(MiningPackets.values()).setDefaultValue(MiningPackets.NORMAL)
             .setDescription("The mode for block click packets").build();
+    Config<Float> speedConfig = new NumberConfig.Builder<Float>("Speed")
+            .setMin(0.5f).setMax(1.0f).setDefaultValue(1.0f)
+            .setRoundingScale(2)
+            .setDescription("The mining progress before breaking").build();
     Config<Boolean> doubleMine = new BooleanConfig.Builder("DoubleMine")
-            .setDescription("Rotates before mining block")
-            .setDefaultValue(false).build();
+            .setDescription("Mines two blocks concurrently")
+            .setDefaultValue(true).build();
+    Config<Boolean> swingConfig = new BooleanConfig.Builder("Swing")
+            .setDescription("Swings hand when sending mining packets")
+            .setDefaultValue(true).build();
     Config<RemineMode> remineMode = new EnumConfig.Builder<RemineMode>("Remine")
             .setValues(RemineMode.values())
             .setDescription("The mode for remining mined blocks")
@@ -56,11 +65,8 @@ public class SpeedMineModule extends ListeningToggleable
             .setDescription("The interval for the limit")
             .setVisible(() -> remineMode.getValue() == RemineMode.INSTANT).build();
     Config<Float> rangeConfig = new NumberConfig.Builder<Float>("Range")
-            .setMin(1.0f).setMax(6.0f).setDefaultValue(4.0f).setFormat("m")
+            .setMin(1.0f).setMax(6.0f).setDefaultValue(5.0f).setFormat("m")
             .setDescription("The max range to mine").build();
-    Config<Float> speedConfig = new NumberConfig.Builder<Float>("Speed")
-            .setMin(0.5f).setMax(1.0f).setDefaultValue(1.0f)
-            .setDescription("The mining progress before breaking").build();
     Config<Boolean> multitaskConfig = new BooleanConfig.Builder("Multitask")
             .setDescription("Allows using items while mining")
             .setDefaultValue(true).build();
@@ -93,11 +99,18 @@ public class SpeedMineModule extends ListeningToggleable
 
     private MiningData mainMiningBlock, packetMiningBlock;
     private MiningRenderState mainState, packetState;
+    private boolean secondaryHolding;
+    private int mainStopCooldown;
+    private int packetStopCooldown;
 
     private MiningData pendingClear;
 
     private long instantStartMs;
     private int instantCount;
+
+    private long lastStopMs;
+    private double delayBalance;
+    private int stopCooldown;
 
     public SpeedMineModule()
     {
@@ -121,10 +134,17 @@ public class SpeedMineModule extends ListeningToggleable
             return;
         }
 
+        clearPacket();
         clearMain();
         pendingClear = null;
         instantStartMs = 0L;
         instantCount = 0;
+        secondaryHolding = false;
+        mainStopCooldown = 0;
+        packetStopCooldown = 0;
+        stopCooldown = 0;
+        lastStopMs = 0L;
+        delayBalance = 0;
     }
 
     @EventListener
@@ -140,6 +160,12 @@ public class SpeedMineModule extends ListeningToggleable
         pendingClear = null;
         instantStartMs = 0L;
         instantCount = 0;
+        secondaryHolding = false;
+        mainStopCooldown = 0;
+        packetStopCooldown = 0;
+        stopCooldown = 0;
+        lastStopMs = 0L;
+        delayBalance = 0;
     }
 
     @EventListener
@@ -157,6 +183,12 @@ public class SpeedMineModule extends ListeningToggleable
             pendingClear = null;
             instantStartMs = 0L;
             instantCount = 0;
+            secondaryHolding = false;
+            mainStopCooldown = 0;
+            packetStopCooldown = 0;
+            stopCooldown = 0;
+            lastStopMs = 0L;
+            delayBalance = 0;
         }
     }
 
@@ -168,12 +200,18 @@ public class SpeedMineModule extends ListeningToggleable
             return;
         }
 
+        if (stopCooldown > 0)
+        {
+            stopCooldown--;
+        }
+
+        tickPacket();
+
         if (isEnabled())
         {
             tickMain();
         }
 
-        tickPacket();
         if (isManualMining && mainMiningBlock == null)
         {
             isManualMining = false;
@@ -196,7 +234,6 @@ public class SpeedMineModule extends ListeningToggleable
 
         isManualMining = true;
         startMining(event.getPos(), event.getDirection());
-        mc.player.swingHand(Hand.MAIN_HAND, false);
     }
 
     @EventListener
@@ -207,16 +244,17 @@ public class SpeedMineModule extends ListeningToggleable
             if (mainState.getAnimation().getFactor() < 0.01f)
             {
                 mainState = null;
-                return;
             }
-
-            mainState.data.render(event.getMatrixStack(),
-                    event.getTickDelta(),
-                    boxMode.getValue(),
-                    miningColor.getValue().getRGB(),
-                    breakingColor.getValue().getRGB(),
-                    (float) Easing.SMOOTH_STEP.ease(mainState.getAnimation().getFactor()),
-                    speedConfig.getValue());
+            else
+            {
+                mainState.data.render(event.getMatrixStack(),
+                        event.getTickDelta(),
+                        boxMode.getValue(),
+                        miningColor.getValue().getRGB(),
+                        breakingColor.getValue().getRGB(),
+                        (float) Easing.SMOOTH_STEP.ease(mainState.getAnimation().getFactor()),
+                        speedConfig.getValue());
+            }
         }
 
         if (packetState != null)
@@ -224,20 +262,139 @@ public class SpeedMineModule extends ListeningToggleable
             if (packetState.getAnimation().getFactor() < 0.01f)
             {
                 packetState = null;
-                return;
+            }
+            else
+            {
+                packetState.data.render(event.getMatrixStack(),
+                        event.getTickDelta(),
+                        boxMode.getValue(),
+                        miningColor.getValue().getRGB(),
+                        breakingColor.getValue().getRGB(),
+                        (float) Easing.SMOOTH_STEP.ease(packetState.getAnimation().getFactor()), 1.0f);
+            }
+        }
+    }
+
+    private boolean isGrim()
+    {
+        return miningPackets.getValue() == MiningPackets.GRIM
+                || miningPackets.getValue() == MiningPackets.GRIM_V3;
+    }
+
+    private boolean canBegin()
+    {
+        if (!isGrim())
+        {
+            return true;
+        }
+
+        long delay = System.currentTimeMillis() - lastStopMs;
+        if (delay >= 275)
+        {
+            return true;
+        }
+
+        double cost = (300 - delay) * 2;
+        return delayBalance + cost <= 900;
+    }
+
+    private void trackStarts(int starts)
+    {
+        if (!isGrim())
+        {
+            return;
+        }
+
+        long delay = System.currentTimeMillis() - lastStopMs;
+        for (int i = 0; i < starts; i++)
+        {
+            if (delay >= 275)
+            {
+                delayBalance *= 0.9;
+            }
+            else
+            {
+                delayBalance += (300 - delay);
+            }
+        }
+
+        delayBalance = MathHelper.clamp((float) delayBalance, -1000.0f, 1000.0f);
+    }
+
+    private boolean demote()
+    {
+        if (mainMiningBlock == null || checkNull())
+        {
+            return false;
+        }
+
+        BlockState state = mc.world.getBlockState(mainMiningBlock.getBlockPos());
+        if (state.isAir() || !MiningUtil.canMineBlock(state))
+        {
+            return false;
+        }
+
+        if (isGrim() && !mainMiningBlock.isDoneMining())
+        {
+            ItemSlot bestTool = AutoToolModule.INSTANCE.getBestTool(mainMiningBlock.getBlockPos());
+            boolean swapped = bestTool != null && Managers.INVENTORY.startSwap(bestTool.getSlot(), swapType.getValue());
+
+            miningPackets.getValue().sendStopPackets(this,
+                    mainMiningBlock.getBlockPos(),
+                    mainMiningBlock.getDirection());
+
+            lastStopMs = System.currentTimeMillis();
+
+            if (swingConfig.getValue())
+            {
+                mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
             }
 
-            packetState.data.render(event.getMatrixStack(),
-                    event.getTickDelta(),
-                    boxMode.getValue(),
-                    miningColor.getValue().getRGB(),
-                    breakingColor.getValue().getRGB(),
-                    (float) Easing.SMOOTH_STEP.ease(packetState.getAnimation().getFactor()), 1.0f);
+            if (swapped)
+            {
+                Managers.INVENTORY.endSwap(swapType.getValue());
+            }
         }
+
+        packetMiningBlock = mainMiningBlock.copy(1.0f);
+        packetState = new MiningRenderState(packetMiningBlock, new Animation(true, 300L));
+        secondaryHolding = false;
+        return true;
+    }
+
+    private void beginMain()
+    {
+        if (mainMiningBlock == null || checkNull())
+        {
+            return;
+        }
+
+        trackStarts(isGrim() ? 2 : 1);
+
+        miningPackets.getValue().sendStartPackets(this,
+                mainMiningBlock.getBlockPos(),
+                mainMiningBlock.getDirection());
+
+        if (swingConfig.getValue())
+        {
+            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+        }
+
+        mainMiningBlock.setStarted(true);
     }
 
     public void startMining(BlockPos blockPos, Direction direction)
     {
+        if (checkNull())
+        {
+            return;
+        }
+
+        if (direction == null)
+        {
+            direction = Direction.UP;
+        }
+
         float oldDamage = -1.0f;
         if (doubleMine.getValue())
         {
@@ -259,10 +416,17 @@ public class SpeedMineModule extends ListeningToggleable
             {
                 if (packetMiningBlock == null || packetMiningBlock.isBlockMined())
                 {
-                    packetMiningBlock = mainMiningBlock.copy(1.0f);
-                    packetState = new MiningRenderState(packetMiningBlock, new Animation(true, 300L));
+                    demote();
+                }
+                else
+                {
+                    clearMain();
                 }
             }
+        }
+        else
+        {
+            clearMain();
         }
 
         ItemSlot slot = AutoToolModule.INSTANCE.getBestTool(blockPos);
@@ -281,11 +445,16 @@ public class SpeedMineModule extends ListeningToggleable
         }
 
         mainState = new MiningRenderState(mainMiningBlock, new Animation(true, 300L));
-        miningPackets.getValue().sendStartPackets(this,
-                mainMiningBlock.getBlockPos(),
-                mainMiningBlock.getDirection());
+        mainStopCooldown = 0;
 
-        mainMiningBlock.setStarted(true);
+        if (stopCooldown == 0 && canBegin())
+        {
+            beginMain();
+        }
+        else
+        {
+            mainMiningBlock.setStarted(false);
+        }
     }
 
     private boolean tryConsumeInstantBudget()
@@ -319,35 +488,43 @@ public class SpeedMineModule extends ListeningToggleable
 
     private void tickMain()
     {
-        if (mainMiningBlock == null)
+        if (mainMiningBlock == null || checkNull())
         {
             return;
         }
 
-        if (mainMiningBlock.getSquaredDistanceTo() > MathHelper.square(rangeConfig.getValue()))
+        if (mainStopCooldown > 0)
         {
-            clearMain();
+            mainStopCooldown--;
+        }
+
+        BlockState state = mc.world.getBlockState(mainMiningBlock.getBlockPos());
+
+        if (!mainMiningBlock.isStarted())
+        {
+            if (state.isAir() || !MiningUtil.canMineBlock(state))
+            {
+                clearMain();
+                return;
+            }
+
+            if (stopCooldown > 0 || !canBegin())
+            {
+                return;
+            }
+
+            beginMain();
             return;
         }
 
-        if (!mainMiningBlock.isStarted() && !mainMiningBlock.isAir() && remineMode.getValue() == RemineMode.FAST)
+        if (state.isAir() || !MiningUtil.canMineBlock(state))
         {
-            miningPackets.getValue().sendStartPackets(this,
-                    mainMiningBlock.getBlockPos(),
-                    mainMiningBlock.getDirection());
+            if (remineMode.getValue() == RemineMode.OFF)
+            {
+                clearMain();
+                return;
+            }
 
-            mainMiningBlock.setStarted(true);
-        }
-
-        boolean multiTasking = mc.player.isUsingItem() && !multitaskConfig.getValue();
-        float blockDamage = mainMiningBlock.tickDelta(multiTasking);
-        if (blockDamage < speedConfig.getValue())
-        {
-            return;
-        }
-
-        if (mainMiningBlock.isAir())
-        {
             mainMiningBlock.resetTicksMining();
 
             if (isManualMining)
@@ -367,14 +544,44 @@ public class SpeedMineModule extends ListeningToggleable
             {
                 return;
             }
+        }
 
-        } else if (mainMiningBlock.hasMinedFor(30))
+        if (mainMiningBlock.getSquaredDistanceTo() > MathHelper.square(rangeConfig.getValue()))
         {
             clearMain();
             return;
         }
 
+        if (!mainMiningBlock.isStarted() && !mainMiningBlock.isAir() && remineMode.getValue() == RemineMode.FAST)
+        {
+            beginMain();
+        }
+
+        boolean multiTasking = mc.player.isUsingItem() && !multitaskConfig.getValue();
+        float blockDamage = mainMiningBlock.tickDelta(multiTasking);
+
+        if (mainMiningBlock.hasMinedFor(30))
+        {
+            clearMain();
+            return;
+        }
+
+        if (blockDamage < speedConfig.getValue())
+        {
+            return;
+        }
+
         if (multiTasking)
+        {
+            return;
+        }
+
+        if (secondaryHolding && packetMiningBlock != null && !packetMiningBlock.isAir())
+        {
+            return;
+        }
+
+        if (mainStopCooldown > 0)
         {
             return;
         }
@@ -390,50 +597,101 @@ public class SpeedMineModule extends ListeningToggleable
                 mainMiningBlock.getBlockPos(),
                 mainMiningBlock.getDirection());
 
+        lastStopMs = System.currentTimeMillis();
+        stopCooldown = 5;
+
+        if (swingConfig.getValue())
+        {
+            mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+        }
+
         Managers.INVENTORY.endSwap(swapType.getValue());
 
-        if (remineMode.getValue() == RemineMode.OFF)
-        {
-            clearMain();
-        }
+        mainStopCooldown = 5;
     }
 
     private void tickPacket()
     {
-        if (packetMiningBlock == null)
+        if (packetMiningBlock == null || checkNull())
         {
+            if (secondaryHolding)
+            {
+                Managers.INVENTORY.endMultitickSwap();
+                secondaryHolding = false;
+            }
+            return;
+        }
+
+        if (packetStopCooldown > 0)
+        {
+            packetStopCooldown--;
+        }
+
+        BlockState state = mc.world.getBlockState(packetMiningBlock.getBlockPos());
+        if (state.isAir() || !MiningUtil.canMineBlock(state))
+        {
+            clearPacket();
+            return;
+        }
+
+        if (packetMiningBlock.getSquaredDistanceTo() > MathHelper.square(rangeConfig.getValue()))
+        {
+            clearPacket();
             return;
         }
 
         boolean multiTasking = mc.player.isUsingItem() && !multitaskConfig.getValue();
         float blockDamage = packetMiningBlock.tickDelta(multiTasking);
-        if (blockDamage < speedConfig.getValue())
-        {
-            return;
-        }
 
-        if (multiTasking)
+        float delta = packetMiningBlock.getBlockBreakingDelta();
+        if (delta <= 0.0f)
         {
-            return;
-        }
-
-        if (packetMiningBlock.isBlockMined() || packetMiningBlock.hasMinedFor(30))
-        {
-            if (mainMiningBlock != null && mainMiningBlock.getBlockDamage() < speedConfig.getValue())
-            {
-                pendingClear = mainMiningBlock;
-            }
-
             clearPacket();
-        } else
+            return;
+        }
+
+        int expected = (int) Math.ceil(1.0f / delta) - 1;
+
+        if (packetMiningBlock.getTotalTicks() > expected + 10)
+        {
+            clearPacket();
+            return;
+        }
+
+        if ((packetMiningBlock.getTotalTicks() >= expected - 1 || blockDamage >= 0.95f) && !secondaryHolding)
         {
             ItemSlot bestTool = AutoToolModule.INSTANCE.getBestTool(packetMiningBlock.getBlockPos());
-            if (bestTool == null)
+            if (bestTool != null && Managers.INVENTORY.startMultitickSwap(bestTool.getSlot()))
             {
-                return;
+                secondaryHolding = true;
             }
+        }
 
-            Managers.INVENTORY.startMultitickSwap(bestTool.getSlot());
+        if (!isGrim())
+        {
+            if ((mainMiningBlock == null || mainMiningBlock.isBlockMined()) && (packetMiningBlock.getTotalTicks() >= expected || blockDamage >= 1.0f) && !multiTasking)
+            {
+                if (packetStopCooldown == 0)
+                {
+                    ItemSlot bestTool = AutoToolModule.INSTANCE.getBestTool(packetMiningBlock.getBlockPos());
+                    if (bestTool != null)
+                    {
+                        Managers.INVENTORY.startSwap(bestTool.getSlot(), swapType.getValue());
+                    }
+
+                    miningPackets.getValue().sendStopPackets(this,
+                            packetMiningBlock.getBlockPos(),
+                            packetMiningBlock.getDirection());
+
+                    if (swingConfig.getValue())
+                    {
+                        mc.getNetworkHandler().sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+                    }
+
+                    Managers.INVENTORY.endSwap(swapType.getValue());
+                    packetStopCooldown = 5;
+                }
+            }
         }
     }
 
@@ -441,13 +699,15 @@ public class SpeedMineModule extends ListeningToggleable
     {
         if (mainMiningBlock != null)
         {
-            if (!mainMiningBlock.isDoneMining())
+            if (!mainMiningBlock.isAir() && !mainMiningBlock.isDoneMining() && mainMiningBlock.isStarted())
             {
                 mainMiningBlock.abort(this);
             }
 
             mainMiningBlock = null;
         }
+
+        mainStopCooldown = 0;
 
         if (mainState != null)
         {
@@ -457,11 +717,14 @@ public class SpeedMineModule extends ListeningToggleable
 
     private void clearPacket()
     {
-        if (packetMiningBlock != null)
+        if (secondaryHolding)
         {
             Managers.INVENTORY.endMultitickSwap();
-            packetMiningBlock = null;
+            secondaryHolding = false;
         }
+
+        packetMiningBlock = null;
+        packetStopCooldown = 0;
 
         if (packetState != null)
         {

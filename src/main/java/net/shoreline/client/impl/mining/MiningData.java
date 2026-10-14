@@ -35,6 +35,7 @@ public class MiningData
     private float blockDamage, lastDamage;
 
     private int ticksMining;
+    private int totalTicks;
 
     public void abort(NetworkHandler handler)
     {
@@ -49,6 +50,10 @@ public class MiningData
     public float tickDelta(boolean isMultitasking)
     {
         this.lastDamage = blockDamage;
+        if (!isMultitasking)
+        {
+            this.totalTicks++;
+        }
         if (isDoneMining())
         {
             if (!isMultitasking)
@@ -66,6 +71,7 @@ public class MiningData
     public void resetTicksMining()
     {
         ticksMining = 0;
+        totalTicks = 0;
     }
 
     public void render(MatrixStack matrixStack,
@@ -113,27 +119,48 @@ public class MiningData
         return MathHelper.clamp(blockDamage / (float) Math.max(0.001, maxProgress), 0.0f, 1.0f);
     }
 
+    public PlayerEntity getPlayer()
+    {
+        PlayerEntity current = MinecraftClient.getInstance().player;
+        return current != null ? current : this.player;
+    }
+
     public double getSquaredDistanceTo()
     {
-        return player.squaredDistanceTo(blockPos.toCenterPos());
+        PlayerEntity p = getPlayer();
+        return p != null ? p.squaredDistanceTo(blockPos.toCenterPos()) : Double.MAX_VALUE;
     }
 
     public BlockState getBlockState()
     {
+        if (MinecraftClient.getInstance().world == null)
+        {
+            return net.minecraft.block.Blocks.AIR.getDefaultState();
+        }
         return MinecraftClient.getInstance().world.getBlockState(blockPos);
     }
 
     public float getBlockBreakingDelta()
     {
         BlockState state = getBlockState();
+        if (MinecraftClient.getInstance().world == null || state == null)
+        {
+            return 0.0f;
+        }
         float f = state.getHardness(MinecraftClient.getInstance().world, blockPos);
         if (f == -1.0f)
         {
             return 0.0f;
         }
 
+        PlayerEntity p = getPlayer();
+        if (p == null)
+        {
+            return 0.0f;
+        }
+
         int i = MiningUtil.canHarvest(miningStack, state) ? 30 : 100;
-        return MiningUtil.getBlockBreakingSpeed(player, miningStack, state) / f / (float) i;
+        return MiningUtil.getBlockBreakingSpeed(p, miningStack, state) / f / (float) i;
     }
 
     public boolean isDoneMining()
@@ -148,7 +175,7 @@ public class MiningData
 
     public boolean isBlockMined()
     {
-        return isDoneMining() && isAir();
+        return isAir();
     }
 
     public boolean isAir()
@@ -172,6 +199,7 @@ public class MiningData
                 .blockDamage(this.blockDamage)
                 .lastDamage(this.lastDamage)
                 .ticksMining(this.ticksMining)
+                .totalTicks(this.totalTicks)
                 .build();
     }
 }

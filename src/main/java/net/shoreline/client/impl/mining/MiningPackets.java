@@ -23,6 +23,23 @@ public enum MiningPackets
         public void sendStopPackets(NetworkHandler handler, BlockPos blockPos, Direction direction)
         {
             handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
+            handler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+        }
+    },
+
+    PACKET {
+        @Override
+        public void sendStartPackets(NetworkHandler handler, BlockPos blockPos, Direction direction)
+        {
+            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, blockPos, direction));
+            handler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+        }
+
+        @Override
+        public void sendStopPackets(NetworkHandler handler, BlockPos blockPos, Direction direction)
+        {
+            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
+            handler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
         }
     },
 
@@ -30,20 +47,15 @@ public enum MiningPackets
         @Override
         public void sendStartPackets(NetworkHandler handler, BlockPos blockPos, Direction direction)
         {
-            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
             handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            BlockPos decoyPos = blockPos.up(2000);
+            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, decoyPos, direction));
         }
 
         @Override
         public void sendStopPackets(NetworkHandler handler, BlockPos blockPos, Direction direction)
         {
             handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, blockPos, direction));
         }
     },
 
@@ -51,25 +63,15 @@ public enum MiningPackets
         @Override
         public void sendStartPackets(NetworkHandler handler, BlockPos blockPos, Direction direction)
         {
-            handler.sendPacket(new PlayerActionC2SPacket(
-                    PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new PlayerActionC2SPacket(
-                    PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new PlayerActionC2SPacket(
-                    PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new PlayerActionC2SPacket(
-                    PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
-
-            handler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-            handler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
-            handler.sendPacket(new HandSwingC2SPacket(Hand.MAIN_HAND));
+            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, blockPos, direction));
+            BlockPos decoyPos = blockPos.down(2000);
+            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.START_DESTROY_BLOCK, decoyPos, direction));
         }
 
         @Override
         public void sendStopPackets(NetworkHandler handler, BlockPos blockPos, Direction direction)
         {
             handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.STOP_DESTROY_BLOCK, blockPos, direction));
-            handler.sendPacket(new PlayerActionC2SPacket(PlayerActionC2SPacket.Action.ABORT_DESTROY_BLOCK, blockPos, direction));
         }
     };
 
